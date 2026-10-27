@@ -1,4 +1,5 @@
 import random
+from collections import deque
 
 NORTH = 1
 EAST = 2
@@ -96,6 +97,79 @@ class MazeGen:
 			else:
 				stack.pop()
 
+	def give_next_cells(self, y: int, x: int) -> list[tuple]:
+		result = []
+		if not self.maze[y][x] & NORTH:
+			result.append((y - 1, x))
+		if not self.maze[y][x] & EAST:
+			result.append((y , x + 1))
+		if not self.maze[y][x] & SOUTH:
+			result.append((y + 1, x))
+		if not self.maze[y][x] & WEST:
+			result.append((y, x - 1))
+
+		return result
+
+	@staticmethod
+	def get_code(solution: list[tuple]) -> str:
+		directions = []
+		for i in range(len(solution) - 1):
+			y1, x1 = solution[i]
+			y2, x2 = solution[i + 1]
+
+			y = y2 - y1
+			x = x2 - x1
+
+			if y == -1:
+				directions.append('N')
+			elif y == 1:
+				directions.append('S')
+			elif x == -1:
+				directions.append('W')
+			else:
+				directions.append('E')
+
+		return "".join(directions)
+
+	def maze_solver(self, entry: tuple, exit: tuple) -> str:
+		beenThere = [
+			[False for _ in range(self.width)] 
+			for _ in range(self.height)
+			]
+
+		queue = deque([entry])
+		beenThere[entry[0]][entry[1]] = True
+
+		parent = {}
+
+		while queue and not beenThere[exit[0]][exit[1]]:
+			print(queue)
+			pos = queue.popleft()
+			new = self.give_next_cells(pos[0], pos[1])
+			
+			print("vizinhos:", new)
+			if new:
+				for i in new:
+					if not beenThere[i[0]][i[1]]:
+						beenThere[i[0]][i[1]] = True
+						parent[(i[0], i[1])] = (pos[0], pos[1])
+						queue.append(i)
+
+		print("dicionario:", parent)
+
+		path = []
+		current = exit
+
+		while current != entry:
+			path.append(current)
+			current = parent[current]
+
+		path.append(entry)
+		path.reverse()
+
+		code = self.get_code(path)
+		return code
+
 	def show_grid(self) -> None:
 		for i in self.maze:
 			print(i)
@@ -108,7 +182,7 @@ class MazeGen:
 		return self.maze
 
 if __name__ == "__main__":
-	new = MazeGen(3, 3, 1)
+	new = MazeGen(4, 4, 12)
 	new.show_grid()
 	print("----------")
 	new.show_visited()
@@ -117,3 +191,4 @@ if __name__ == "__main__":
 	new.show_grid()
 	print("----------")
 	new.show_visited()
+	print(new.maze_solver((0,0), (3, 3)))
